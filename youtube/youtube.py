@@ -53,7 +53,7 @@ while(i > 0):
 # elements = []
 def ignore_case(element):
     ignore_word = ["T Mobile", "US Cellular", "Sprint USA", "Unlock Service", "Xfinity USA", "Cricket USA", "FRP", "Boost USA", "Verizon USA", "Spectrum", "Lost mode", "Huawei",
-                   "Xiaomi", "screen lock", "TFN", "iphone"]
+                   "Xiaomi", "screen lock", "TFN", "iphone", "ios", "icloud", "ipad"]
     text = element.text.lower()
     for i in ignore_word:
         if i.lower() in text:
