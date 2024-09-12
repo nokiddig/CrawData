@@ -169,7 +169,7 @@ columns = ['Type', 'Link',  'Published', 'Title', 'Content']
 data = []
 
 for i, thread_link in enumerate(total_thread_links):
-    row = ['youtube', thread_link["link"], thread_link["title"], thread_link["creatAt"], ''.join(list_answers[i][0:5])]
+    row = ['youtube', thread_link["link"], thread_link["creatAt"], thread_link["title"], ''.join(list_answers[i][0:5])]
     if len(list_answers[i][0]) >= MIN_WORDS:
         data.append(row)
 
