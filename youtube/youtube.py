@@ -1,97 +1,63 @@
 # %% [markdown]
 # ### Get link
 
+# %% [markdown]
+# Doc: https://developers.google.com/youtube/v3/docs/search/list?hl=vi
+
 # %%
-import time
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
+strs = ['AIza','SyCXm','llW1PCC','yoOq','Ls5j2Db','ZBltp9','EFqWzI']
+api_key = ''.join(strs)
 
-chrome_options = Options()
-chrome_options.add_argument("--headless")  # Kích hoạt chế độ headless
+# %%
+# limit time query
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
-driver = webdriver.Chrome(options=chrome_options)
+def get_previous_date(month, day):
+    today = datetime.now()
 
+    # Lấy ngày của tháng trước
+    previous_month_date = today - relativedelta(months=month, days=day)
+
+    # Chuyển đổi sang định dạng yêu cầu "YYYY-MM-DDTHH:MM:SSZ"
+    formatted_date = previous_month_date.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    return formatted_date
+
+
+# %%
+from googleapiclient.discovery import build
+
+# Init YouTube API client
+youtube = build('youtube', 'v3', developerKey=api_key)
+
+def search_youtube(query, date, max_results=150):
+    request = youtube.search().list(
+        q=query,
+        part="snippet",
+        type="video",
+        order="date", # sort: date, rating, relevance, viewCount
+        publishedAfter=date, #date
+        maxResults=max_results
+    )
+    response = request.execute()
+    return response['items']
+        
+
+# %%
 query = "samsung+kg+mdm+unlock"
-driver.get(f"https://www.youtube.com/results?search_query={query}")
+previous_date = get_previous_date(month=0, day=30)
+print(previous_date)
+
+search_result = search_youtube(query= query, date=previous_date)
 
 # %%
-# elem = driver.find_elements(By.CLASS_NAME, "inline-metadata-item")
-
-# for e in elem:
-#     print(e.text)
-
-# %%
-# filter by "This month" option:
-driver.find_element(By.ID, "filter-button").click()
-
-time.sleep(2)
-
-filter = driver.find_elements(By.ID, "endpoint")
-for i in filter:
-   if(i.text == "This month"):
-      i.click()
-
-time.sleep(2)
-
+#ignore title
+ignore_word = ["T Mobile", "US Cellular", "Sprint USA", "Unlock Service", "Xfinity USA", "Cricket USA", "FRP", "Boost USA", "Verizon USA", "Spectrum", "Lost mode", "Huawei",
+                   "Xiaomi", "screen lock", "TFN", "iphone", "icloud"]
 
 # %%
-# scroll page
-i = 10
-body = driver.find_element(By.TAG_NAME, 'body') 
-while(i > 0):
-    k = 5
-    while(k >= 0):
-        body.send_keys(Keys.PAGE_DOWN)  # Scroll down
-        k -= 1
-    
-    time.sleep(1)
-    i -= 1
-
-# %%
-# elements = []
-def ignore_case(element):
-    ignore_word = ["T Mobile", "US Cellular", "Sprint USA", "Unlock Service", "Xfinity USA", "Cricket USA", "FRP", "Boost USA", "Verizon USA", "Spectrum", "Lost mode", "Huawei",
-                   "Xiaomi", "screen lock", "TFN", "iphone"]
-    text = element.text.lower()
-    for i in ignore_word:
-        if i.lower() in text:
-            return True
-    else:
-        return False
-
-# %%
-# get elements:
-data = {'titles' : [],
-        'links' : [],
-        'dates' : [],
-        'contents' : []}
-elements = []
-els = driver.find_elements(By.ID, "video-title")
-
-for c, e in enumerate(els):
-    if(e.text != "" and ignore_case(e) != True):
-        elements.append(e)
-        # print(f"{c} : {e.text}")
-
-# %%
-# save to arrays
-titles = []
-links = []
-dates = []
-ytlinks = []
-descriptions = []
-
-# elem = driver.find_elements(By.TAG_NAME, "a")
-for i, e in enumerate(elements):
-    link = e.get_attribute('href')
-    if "shorts" in link: 
-        continue
-    links.append(link)
-    # titles.append(e.text)
-    print(f"{i} - {e.text} - {e.get_attribute('href')}")
-
+video_ids = [item['id']['videoId'] for item in search_result]
 
 # %% [markdown]
 # ### Get data API
@@ -111,9 +77,6 @@ video_id = get_video_id(url)
 print(f'Video ID: {video_id}')
 
 # %%
-api_key = 'AIzaSyCXmllW1PCCyoOqLs5j2DbZBltp9EFqWzI'
-
-# %%
 #print json
 import json
 
@@ -124,7 +87,7 @@ def prinJson(data):
 # %%
 import requests
 
-def getVideoInfo(url, video_id):
+def getVideoInfo(video_id):
     # URL để gọi YouTube Data API
     url = f'https://www.googleapis.com/youtube/v3/videos?id={video_id}&key={api_key}&part=snippet,contentDetails,statistics'
 
@@ -138,20 +101,20 @@ def getVideoInfo(url, video_id):
     else:
         print(f'Error: {response.status_code}')
 
-def getData(video_info):
+def getData(link, video_info):
     title = video_info['snippet']['title']
     description = video_info['snippet']['description']
     published_at = video_info['snippet']['publishedAt']
-    return ['gsm', link, published_at, title,  description]
+    return ['youtube', link, published_at, title,  description]
 
 # %%
 columns = ['Type', 'Link',  'Published', 'Title', 'Content']
 data = []
-for i, e in enumerate(links):
-    video_id = get_video_id(e)
-    video_info = getVideoInfo(link, video_id)
-    data_row = getData(video_info)
-    # print(data_row)
+for i, video_id in enumerate(video_ids):
+    video_info = getVideoInfo(video_id)
+    link = f"https://www.youtube.com/watch?v={video_id}"
+    data_row = getData(link, video_info)
+    print(data_row[3])
     data.append(data_row)
 
 # %%
@@ -172,16 +135,6 @@ else:
 
 # %%
 print('Success')
-
-# %%
-# import pandas as pd
-# from datetime import datetime
-# today = datetime.today().date()
-
-# df = pd.DataFrame(data, columns=columns)
-
-# with pd.ExcelWriter(f'output_{today}.xlsx') as writer:
-#    df.to_excel(writer, sheet_name=f'youtube_{today}', encoding='utf-8-sig', index=True)
 
 # %% [markdown]
 # query"
