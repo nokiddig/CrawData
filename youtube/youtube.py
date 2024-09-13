@@ -88,25 +88,19 @@ def prinJson(data):
 import requests
 
 def getVideoInfo(video_id):
-    # URL để gọi YouTube Data API
-    url = f'https://www.googleapis.com/youtube/v3/videos?id={video_id}&key={api_key}&part=snippet,contentDetails,statistics'
-
-    # GET
-    response = requests.get(url)
-    # check success
-    if response.status_code == 200:
-        data = response.json()
-        video_info = data['items'][0]
-        return video_info
-    else:
-        print(f'Error: {response.status_code}')
+    request = youtube.videos().list(
+        part="snippet,contentDetails,statistics",  # Các thông tin muốn lấy (ví dụ: tiêu đề, view, mô tả)
+        id=video_id
+    )
+    response = request.execute()
+    video_info = response['items'][0]
+    return video_info
 
 def getData(link, video_info):
     title = video_info['snippet']['title']
     description = video_info['snippet']['description']
     published_at = video_info['snippet']['publishedAt']
     return ['youtube', link, published_at, title,  description]
-
 # %%
 columns = ['Type', 'Link',  'Published', 'Title', 'Content']
 data = []
